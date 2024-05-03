@@ -7,21 +7,16 @@
 #include <libavformat/avformat.h>
 #include <libavutil/mathematics.h>
 
-/* Specific stream info from file */
+/* Audio info for libav */
 typedef struct {
     const char* filename;
     int stream_index;
-} stream_info;
-
-/* Audio info for libav */
-typedef struct {
-    int stream_index;
+    int channel_index;
 
     AVFormatContext* format_context;
     AVCodecParameters* codec_parameters;
     const AVCodec* codec;
     AVCodecContext* codec_context;
-    AVStream* stream;
 } audio_info;
 
 /* Audio stream */
@@ -31,7 +26,12 @@ typedef struct {
 } stream_data;
 
 /* Get audio info object from file */
-audio_info get_audio_info(stream_info si);
+audio_info get_audio_info(const char* filename);
+
+/* Choose stream+channel from two files (if files are same,
+ * choose two different channels, otherwise pick first channel 
+ * from both files) */
+void choose_channels(audio_info ai1, audio_info ai2);
 
 /* Get sample rate of specified stream in audiofile */
 int get_sample_rate(audio_info ai);
