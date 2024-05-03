@@ -26,9 +26,13 @@ typedef struct {
 
 /* Audio stream */
 typedef struct {
-    float* data;
+    double* data;
     size_t size;
+    size_t index;
 } stream_data;
+
+/* Write data to stream_data */
+int sd_write(stream_data* sd, const void* source, int bytes_per_sample);
 
 /* Get audio info object from file */
 audio_info get_audio_info(const char* filename);
@@ -36,7 +40,7 @@ audio_info get_audio_info(const char* filename);
 /* Choose stream+channel from two files (if files are same,
  * choose two different channels, otherwise pick first channel 
  * from both files) */
-void choose_channels(audio_info ai1, audio_info ai2);
+void choose_channels(audio_info* ai1, audio_info* ai2);
 
 /* Get sample rate of specified stream in audiofile */
 int get_sample_rate(audio_info ai);

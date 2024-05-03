@@ -18,7 +18,7 @@ int main(int argc, const char** argv) {
 
     audio_info ai1 = get_audio_info(filename1);
     audio_info ai2 = get_audio_info(filename2);
-    choose_channels(ai1, ai2);
+    choose_channels(&ai1, &ai2);
 
     int sample_rate1 = get_sample_rate(ai1);
     int sample_rate2 = get_sample_rate(ai2);
@@ -37,12 +37,12 @@ int main(int argc, const char** argv) {
     if (filename1 != filename2)
         free_audio_info(ai2);
 
-    // example signals for test
-    float d1[10] = {0, 0, 1, 0, -1, 0, 0, 0, 0, 0};
-    float d2[10] = {0, 0, 0, 0, 1, 0, -1, 0, 0, 0};
-    sd1.data = d1;
-    sd2.data = d2;
-    sd1.size = sd2.size = 10;
+    // // example signals for test
+    // float d1[10] = {0, 0, 1, 0, -1, 0, 0, 0, 0, 0};
+    // float d2[10] = {0, 0, 0, 0, 1, 0, -1, 0, 0, 0};
+    // sd1.data = d1;
+    // sd2.data = d2;
+    // sd1.size = sd2.size = 10;
 
     int delta_samples, sample_rate, delta_time;
 
@@ -50,8 +50,8 @@ int main(int argc, const char** argv) {
     sample_rate = sample_rate1;
     delta_time = (1000 * delta_samples) / sample_rate;
 
-    // free_stream_data(sd1);
-    // free_stream_data(sd2);
+    free_stream_data(sd1);
+    free_stream_data(sd2);
 
     printf("delta: %i samples\nsample rate: %i Hz\ndelta time: %i ms\n",
            delta_samples, sample_rate, delta_time);
