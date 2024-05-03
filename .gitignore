@@ -3,3 +3,4 @@ obj/
 files/
 .clang-format
 Makefile
+main
