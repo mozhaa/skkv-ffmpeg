@@ -1,0 +1,5 @@
+.vscode/
+obj/
+files/
+.clang-format
+Makefile
