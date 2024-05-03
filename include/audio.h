@@ -7,6 +7,10 @@
 #include <libavformat/avformat.h>
 #include <libavutil/mathematics.h>
 
+#define AUDIO_INBUF_SIZE 20480
+#define AV_INPUT_BUFFER_PADDING_SIZE 64
+#define AUDIO_REFILL_THRESH 4096
+
 /* Audio info for libav */
 typedef struct {
     const char* filename;
