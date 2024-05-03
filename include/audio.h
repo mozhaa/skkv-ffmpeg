@@ -16,6 +16,7 @@ typedef struct {
     const char* filename;
     int stream_index;
     int channel_index;
+    int bytes_per_sample;
 
     AVFormatContext* format_context;
     AVCodecParameters* codec_parameters;

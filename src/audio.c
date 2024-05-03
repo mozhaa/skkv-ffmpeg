@@ -160,10 +160,12 @@ audio_info get_audio_info(const char* filename) {
     }
 
     ai.codec = ai.codec_context->codec;
+    ai.bytes_per_sample = av_get_bytes_per_sample(ai.codec_context->sample_fmt);
+    if (ai.bytes_per_sample == 0)
+        ai.bytes_per_sample = 4;
 
     _log("Opened codec: name=%s", ai.codec_context->codec->name);
-    _log("Bytes per sample = %d",
-         av_get_bytes_per_sample(ai.codec_context->sample_fmt));
+    _log("Bytes per sample = %d", ai.bytes_per_sample);
 
     av_dump_format(ai.format_context, 0, ai.filename, 0);
 
@@ -174,22 +176,33 @@ int get_sample_rate(audio_info ai) {
     return ai.codec_context->sample_rate;
 }
 
-static int64_t print_frame(const AVFrame* frame, int channel_index) {
+static int64_t print_frame(const AVFrame* frame, int channel_index,
+                           int bytes_per_sample) {
     _log("FRAME START, nb_samples=%d", frame->nb_samples);
-    const float* p = (float*)frame->data[0] + channel_index;
+    const int8_t* p =
+        (int8_t*)frame->data[0] + channel_index * bytes_per_sample;
     for (int i = 0; i < frame->nb_samples;
-         ++i, p += frame->ch_layout.nb_channels) {
-        float val = *p;
-        printf("%f\n", val);
+         ++i, p += frame->ch_layout.nb_channels * bytes_per_sample) {
+        switch (bytes_per_sample) {
+        case 2:
+            printf("%d\n", *(int16_t*)p);
+            break;
+        case 4:
+            printf("%f\n", *(float*)p);
+            break;
+        case 8:
+            printf("%lf\n", *(double*)p);
+            break;
+        default:
+            printf("unsupported bytes per sample\n");
+            break;
+        }
     }
     _log("FRAME END, nb_samples=%d", frame->nb_samples);
     return frame->nb_samples;
 }
 
-static int64_t decode_packet(AVPacket* packet, AVFrame* frame, audio_info ai) {
-    _log("packet.stream_index=%d, required_stream_index=%d", packet->stream_index, ai.stream_index);
-    _log("stream type = %d, needed = %d", ai.format_context->streams[packet->stream_index]->codecpar->codec_type, AVMEDIA_TYPE_AUDIO);
-    _log("packet size=%d, duration=%ld", packet->size, packet->duration);
+static size_t decode_packet(AVPacket* packet, AVFrame* frame, audio_info ai) {
     AVCodecContext* codec_context = ai.codec_context;
     int response;
     if ((response = avcodec_send_packet(codec_context, packet)) < 0) {
@@ -198,7 +211,7 @@ static int64_t decode_packet(AVPacket* packet, AVFrame* frame, audio_info ai) {
         exit(response);
     }
 
-    int64_t points = 0;
+    size_t total_samples = 0;
     while (response >= 0) {
         response = avcodec_receive_frame(codec_context, frame);
         if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
@@ -209,9 +222,10 @@ static int64_t decode_packet(AVPacket* packet, AVFrame* frame, audio_info ai) {
                     av_err2str(response));
             exit(response);
         }
-        points += print_frame(frame, ai.channel_index);
+        total_samples += frame->nb_samples;
+        print_frame(frame, ai.channel_index, ai.bytes_per_sample);
     }
-    return points;
+    return total_samples;
 }
 
 stream_data extract_audio(audio_info ai) {
@@ -231,59 +245,18 @@ stream_data extract_audio(audio_info ai) {
         exit(1);
     }
 
-    FILE* file = fopen(ai.filename, "rb");
-    if (!file) {
-        fprintf(stderr, "Could not open %s\n", ai.filename);
-        exit(1);
-    }
-    _log("Opened file");
-    _log("Searching for parser for codec_id=%d", ai.codec->id);
-    AVCodecParserContext* parser = av_parser_init(ai.codec->id);
-    if (!parser) {
-        fprintf(stderr, "Parser not found\n");
-        exit(1);
-    }
-    _log("Initialized parser");
-    // Read data from file to buffer
-    uint8_t inbuf[AUDIO_INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
-    uint8_t* data = inbuf;
-    _log("Starting to read packets");
-    size_t data_size = fread(inbuf, 1, AUDIO_INBUF_SIZE, file);
-    while (data_size > 0) {
-        if (!frame) {
-            if (!(frame = av_frame_alloc())) {
-                fprintf(stderr, "Could not allocate audio frame\n");
-                exit(1);
-            }
+    size_t total_samples = 0;
+    while (av_read_frame(ai.format_context, packet) >= 0) {
+        if (packet->stream_index == ai.stream_index) {
+            int samples_in_packet = decode_packet(packet, frame, ai);
+            total_samples += samples_in_packet;
         }
-
-        int ret = av_parser_parse2(parser, ai.codec_context, &packet->data,
-                                   &packet->size, data, data_size,
-                                   AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-        if (ret < 0) {
-            fprintf(stderr, "Error while parsing\n");
-            exit(1);
-        }
-        data += ret;
-        data_size -= ret;
-
-        if (packet->size && packet->stream_index == ai.stream_index)
-            decode_packet(packet, frame, ai);
-
-        if (data_size < AUDIO_REFILL_THRESH) {
-            memmove(inbuf, data, data_size);
-            data = inbuf;
-            size_t len =
-                fread(data + data_size, 1, AUDIO_INBUF_SIZE - data_size, file);
-            if (len > 0)
-                data_size += len;
-        }
+        av_packet_unref(packet);
     }
+    _log("Total samples = %ld", total_samples);
 
     av_frame_free(&frame);
     av_packet_free(&packet);
-    fclose(file);
-
     return sd;
 }
 
