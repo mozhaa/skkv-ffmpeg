@@ -152,10 +152,10 @@ static int64_t decode_packet(AVPacket* packet, AVCodecContext* codec_context,
             exit(response);
         }
         // _log("frame_pts=%ld", frame->pts);
-        int bufsize =
-            av_samples_get_buffer_size(NULL, frame->ch_layout.nb_channels,
-                                       frame->nb_samples, frame->format, 1);
-        _log("Packet size = %d, bufsize = %d", packet->size, bufsize);
+        // int bufsize =
+        //     av_samples_get_buffer_size(NULL, frame->ch_layout.nb_channels,
+        //                                frame->nb_samples, frame->format, 1);
+        // _log("Packet size = %d, bufsize = %d", packet->size, bufsize);
         points += print_frame(frame, packet->size);
     }
     return points;

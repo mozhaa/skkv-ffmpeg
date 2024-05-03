@@ -33,7 +33,11 @@ int main(int argc, char** argv) {
 
     stream_data sd1 = extract_audio(ai1);
     stream_data sd2 = extract_audio(ai2);
+    
+    free_audio_info(ai1);
+    free_audio_info(ai2);
 
+    // example signals for test
     float d1[10] = {0, 0, 1, 0, -1, 0, 0, 0, 0, 0};
     float d2[10] = {0, 0, 0, 0, 1, 0, -1, 0, 0, 0};
     sd1.data = d1;
@@ -45,6 +49,9 @@ int main(int argc, char** argv) {
     delta_samples = get_delta_samples(sd1, sd2);
     sample_rate = sample_rate1;
     delta_time = (1000 * delta_samples) / sample_rate;
+
+    free_stream_data(sd1);
+    free_stream_data(sd2);
 
     printf("delta: %i samples\nsample rate: %i Hz\ndelta time: %i ms\n",
            delta_samples, sample_rate, delta_time);
