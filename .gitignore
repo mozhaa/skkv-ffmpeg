@@ -4,3 +4,7 @@ files/
 .clang-format
 Makefile
 main
+.gdb_history
+decode.c
+demux_decode.c
+decode

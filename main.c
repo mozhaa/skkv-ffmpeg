@@ -19,18 +19,26 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    int sample_rate1 = get_sample_rate(si1);
-    int sample_rate2 = get_sample_rate(si2);
+    audio_info ai1 = get_audio_info(si1), ai2 = get_audio_info(si2);
+
+    int sample_rate1 = get_sample_rate(ai1);
+    int sample_rate2 = get_sample_rate(ai2);
     if (sample_rate1 != sample_rate2) {
         fprintf(stderr,
-                "Sample rates are different in specified audio streams (%d != "
+                "Different sample rate streams are not supported (%d != "
                 "%d)\n",
                 sample_rate1, sample_rate2);
         exit(2);
     }
 
-    stream_data sd1 = extract_audio(si1);
-    stream_data sd2 = extract_audio(si2);
+    stream_data sd1 = extract_audio(ai1);
+    stream_data sd2 = extract_audio(ai2);
+
+    float d1[10] = {0, 0, 1, 0, -1, 0, 0, 0, 0, 0};
+    float d2[10] = {0, 0, 0, 0, 1, 0, -1, 0, 0, 0};
+    sd1.data = d1;
+    sd2.data = d2;
+    sd1.size = sd2.size = 10;
 
     int delta_samples, sample_rate, delta_time;
 
